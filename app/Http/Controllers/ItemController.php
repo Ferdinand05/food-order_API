@@ -8,6 +8,7 @@ use App\Models\Item;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class ItemController extends Controller
@@ -17,8 +18,9 @@ class ItemController extends Controller
      */
     public function index()
     {
-        $items = Item::latest()->get();
-
+        $items = Cache::remember('items', 60, function () {
+            return Item::latest()->get();
+        });
         return ItemResource::collection($items);
     }
 
@@ -49,6 +51,9 @@ class ItemController extends Controller
             'image' => $imageFullName
         ]);
 
+        // update cache
+        $items = Item::latest()->get();
+        Cache::put('items', $items, 60);
 
         return new DetailItemResource($item);
     }
@@ -95,6 +100,9 @@ class ItemController extends Controller
             'image' => $imageFullName
         ]);
 
+        $items = Item::latest()->get();
+        Cache::put('items', $items, 60);
+
         return new DetailItemResource($item);
     }
 
@@ -107,6 +115,9 @@ class ItemController extends Controller
         // return $id;
         $item  =  Item::where('id', $id)->first();
         $item->delete();
+
+        $items = Item::latest()->get();
+        Cache::put('items', $items, 60);
 
         return new DetailItemResource($item);
     }

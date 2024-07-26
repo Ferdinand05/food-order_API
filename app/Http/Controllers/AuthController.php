@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\UserDetailResource;
+use App\Models\Item;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -28,6 +30,8 @@ class AuthController extends Controller
 
         $user->tokens()->delete();
 
+
+
         return response()->json([
             'data' => [
                 'message' => 'Login Success!',
@@ -48,6 +52,7 @@ class AuthController extends Controller
     {
         $user = Auth::user();
         $user->tokens()->delete();
+        Cache::clear();
         return response()->json(['message' => 'You are logged out.']);
     }
 }

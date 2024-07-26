@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Support\Facades\Cache;
 
 class OrderController extends Controller implements HasMiddleware
 {
@@ -31,8 +32,7 @@ class OrderController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $orders = Order::latest()->get();
-
+        $orders = Cache::remember('orders', 60, fn () => Order::latest()->get());
         return OrderResource::collection($orders);
     }
 
@@ -88,6 +88,9 @@ class OrderController extends Controller implements HasMiddleware
             DB::rollBack();
             return response()->json(['error' => $th->getMessage()], 500);
         }
+
+        $orders = Order::latest()->get();
+        Cache::put('orders', $orders, 60);
 
         return new DetailOrderResource($order);
     }
@@ -152,6 +155,8 @@ class OrderController extends Controller implements HasMiddleware
     public function orderReport(Request $request)
     {
         $orders = Order::with(['waitress:id,name', 'cashier:id,name'])->whereMonth('order_date', $request->month)->latest()->get();
+
+
 
         $orderCount = $orders->count();
         $maxPayment = $orders->max('total');
