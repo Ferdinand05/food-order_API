@@ -52,7 +52,7 @@ class AuthController extends Controller
     {
         $user = Auth::user();
         $user->tokens()->delete();
-        Cache::clear();
+        Cache::flush();
         return response()->json(['message' => 'You are logged out.']);
     }
 }
