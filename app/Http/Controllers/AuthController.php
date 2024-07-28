@@ -6,6 +6,8 @@ use App\Http\Resources\UserDetailResource;
 use App\Models\Item;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Redis\Connections\PredisConnection;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -19,7 +21,6 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required'
         ]);
-
         $user = User::whereEmail($request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -29,8 +30,6 @@ class AuthController extends Controller
         }
 
         $user->tokens()->delete();
-
-
 
         return response()->json([
             'data' => [
@@ -52,7 +51,7 @@ class AuthController extends Controller
     {
         $user = Auth::user();
         $user->tokens()->delete();
-        Cache::flush();
+        Redis::flushall();
         return response()->json(['message' => 'You are logged out.']);
     }
 }

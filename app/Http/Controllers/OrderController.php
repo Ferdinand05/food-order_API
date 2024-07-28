@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\DetailItemResource;
-use App\Http\Resources\DetailOrderResource;
-use App\Http\Resources\OrderResource;
+use Carbon\Carbon;
 use App\Models\Item;
 use App\Models\Order;
 use App\Models\OrderDetail;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Resources\OrderResource;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
+use App\Http\Resources\DetailItemResource;
+use App\Http\Resources\DetailOrderResource;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Support\Facades\Cache;
 
 class OrderController extends Controller implements HasMiddleware
 {
@@ -32,7 +33,7 @@ class OrderController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $orders = Cache::remember('orders', 60, fn () => Order::latest()->get());
+        $orders = Redis::set('orders', Order::latest()->get());
         return OrderResource::collection($orders);
     }
 
@@ -90,7 +91,7 @@ class OrderController extends Controller implements HasMiddleware
         }
 
         $orders = Order::latest()->get();
-        Cache::put('orders', $orders, 60);
+        Redis::set('orders', $orders);
 
         return new DetailOrderResource($order);
     }
@@ -101,6 +102,8 @@ class OrderController extends Controller implements HasMiddleware
     public function show(string $id)
     {
         $order = Order::with('orderDetail:id,order_id,item_id,price,qty', 'orderDetail.item:id,name,price', 'waitress:id,name,email,role_id', 'cashier:id,name,email,role_id')->find($id);
+
+
         return new DetailOrderResource($order);
     }
 
@@ -131,6 +134,7 @@ class OrderController extends Controller implements HasMiddleware
         $order->update([
             'status' => 'Done'
         ]);
+
 
         return new DetailOrderResource($order);
     }

@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 
 class ItemController extends Controller
@@ -18,10 +19,9 @@ class ItemController extends Controller
      */
     public function index()
     {
-        $items = Cache::remember('items', 60, function () {
-            return Item::latest()->get();
-        });
-        return ItemResource::collection($items);
+        $items = Item::latest()->get();
+        $data =  Redis::set('items', $items);
+        return ItemResource::collection($data);
     }
 
     /**
@@ -53,7 +53,7 @@ class ItemController extends Controller
 
         // update cache
         $items = Item::latest()->get();
-        Cache::put('items', $items, 60);
+        Redis::set('items', $items);
 
         return new DetailItemResource($item);
     }
@@ -101,7 +101,7 @@ class ItemController extends Controller
         ]);
 
         $items = Item::latest()->get();
-        Cache::put('items', $items, 60);
+        Redis::set('items', $items);
 
         return new DetailItemResource($item);
     }
@@ -117,7 +117,7 @@ class ItemController extends Controller
         $item->delete();
 
         $items = Item::latest()->get();
-        Cache::put('items', $items, 60);
+        Redis::set('items', $items);
 
         return new DetailItemResource($item);
     }
