@@ -33,8 +33,17 @@ class OrderController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $orders = Redis::set('orders', Order::latest()->get());
-        return OrderResource::collection($orders);
+        $orders = Order::latest()->get();
+        Redis::set('orders', $orders->toJson());
+
+
+
+        $data = Redis::get('orders');
+        $orderArray = json_decode($data, true);
+
+        $orderCollection = Order::hydrate($orderArray);
+
+        return OrderResource::collection($orderCollection);
     }
 
     /**

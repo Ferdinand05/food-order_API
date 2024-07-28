@@ -20,8 +20,20 @@ class ItemController extends Controller
     public function index()
     {
         $items = Item::latest()->get();
-        $data =  Redis::set('items', $items);
-        return ItemResource::collection($data);
+        // Set Cache
+        Redis::set('items', $items->toJson());
+
+        // Mengambil data dari Redis
+        $data = Redis::get('items');
+
+        // Mengubah JSON dari Redis menjadi array
+        $itemsArray = json_decode($data, true);
+
+        // Mengubah array menjadi koleksi Eloquent
+        $itemsCollection = Item::hydrate($itemsArray);
+
+        // Menggunakan ItemResource untuk koleksi yang diambil dari Redis
+        return ItemResource::collection($itemsCollection);
     }
 
     /**
